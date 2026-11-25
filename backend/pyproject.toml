@@ -23,6 +23,7 @@ max-complexity = 10  # NFR-05
 testpaths = ["tests"]
 addopts = "-q"
 norecursedirs = ["fixtures"]
+pythonpath = ["."]
 
 [tool.coverage.run]
 source = ["app"]

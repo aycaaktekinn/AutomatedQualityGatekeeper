@@ -31,6 +31,13 @@ Findings from automated gates and reviews, and what we changed. Raw tool output 
 
 After the fix: psf/requests B (89.2), pallets/flask B (85.9), pallets/itsdangerous B (86.3).
 
+## Round 4 — first CI run on GitHub
+
+| # | Found by | Finding | Change | Requirement |
+| --- | --- | --- | --- | --- |
+| 12 | GitHub Actions (G2) | Tests passed locally with `python -m pytest` but failed in CI with plain `pytest`: `ModuleNotFoundError: app` | `pythonpath = ["."]` in the pytest configuration, so both commands behave the same | Portability (NFR-07) |
+| 13 | GitHub Actions warning | Actions pinned to versions that run on deprecated Node.js 20 | Updated to `checkout@v5`, `setup-python@v6`, `setup-node@v5` | Maintainability |
+
 ## Gate status after all rounds
 
 - Ruff: 0 issues · xenon: every function McCabe ≤ 10, average 2.6 · Bandit: 0 medium/high
