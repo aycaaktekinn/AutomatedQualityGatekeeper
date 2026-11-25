@@ -46,8 +46,20 @@ After the fix: psf/requests B (89.2), pallets/flask B (85.9), pallets/itsdangero
 | 15 | User test | No way to stop a long analysis, and Radon/Lizard had no time limit | FR-14 implemented: Stop button, `POST /api/analyses/{id}/cancel`, processes polled and killed within a second, 10-minute limit for the whole run | FR-14, SR-01, R3 |
 | 16 | User test | The UI only showed "Analysing…", so a long run looked frozen | Current stage (cloning, running radon, …) and elapsed time shown | NFR-06, NFR-14 |
 
+## Round 6 — new UI from the Stitch design (v0.2)
+
+| # | Found by | Finding | Change | Requirement |
+| --- | --- | --- | --- | --- |
+| 17 | Design review | The Stitch export loads Tailwind and fonts from third-party CDNs, which our Content-Security-Policy forbids | Design rebuilt in our own CSS; Inter and JetBrains Mono bundled with the app | R8 |
+| 18 | Design review | The design showed data the system does not have (live log, job IDs, worker PIDs, portability score, quality-gate pass, fix suggestions) | Left out; only real data is shown (stages, tool versions, per-characteristic grades, history) | Honesty of the report, FR-15 |
+| 19 | axe-core (light) | Tinted chips and pills had 4.25–4.39:1 contrast | Darker text colours for every grade | NFR-13 |
+| 20 | axe-core | White "GRADE" caption on the B badge had 2.93:1 | Darker grade fills (white text >= 4.5:1) | NFR-13 |
+| 21 | axe-core | Links inside text were distinguished only by colour | Links in running text are underlined | NFR-13 |
+| 22 | axe-core | `aria-expanded` on a table row is not allowed | Each issue has a real button that expands the code snippet | NFR-13 |
+| 23 | Playwright | Stop now asks for confirmation; tests used the old select-based filter | Tests updated; accessibility now checked in light and dark mode and on the results page | Test quality |
+
 ## Gate status after all rounds
 
 - Ruff: 0 issues · xenon: every function McCabe ≤ 10, average 2.6 · Bandit: 0 medium/high
-- 81 backend tests, branch coverage 89% · 5 Playwright E2E tests incl. accessibility
+- 81 backend tests, branch coverage 89% · 7 Playwright E2E tests incl. accessibility
 - Dogfooding: our own repository scores **A (97.5)**

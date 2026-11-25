@@ -1,6 +1,6 @@
 [project]
 name = "quality-gatekeeper"
-version = "0.1.0"
+version = "0.2.0"
 description = "Automated Quality Gatekeeper: ISO/IEC 25010 based code quality scores for GitHub repositories"
 requires-python = ">=3.12"
 

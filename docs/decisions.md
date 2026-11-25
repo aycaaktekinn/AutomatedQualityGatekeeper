@@ -51,3 +51,9 @@ Fault tolerance needs running code, which D6 forbids. We measure error-handling 
 ## D8. Hash-based routing without a router library
 
 Two pages do not justify a dependency; fewer dependencies means a smaller attack surface for `npm audit`.
+
+## D9. Stitch design adopted, rebuilt in our own CSS (v0.2)
+
+- **Options:** (a) paste the Stitch HTML with its Tailwind and Google Fonts CDN links; (b) rebuild the design with our own CSS and bundled fonts.
+- **Chosen:** (b).
+- **Why:** (a) would require loosening the Content-Security-Policy (R8) and would make the UI depend on third-party servers. Elements of the design with no real data behind them were left out on purpose.

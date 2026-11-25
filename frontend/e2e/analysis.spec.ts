@@ -40,7 +40,7 @@ test.describe('UC-03 / UC-04 View score and inspect issues', () => {
     await expect(page.getByTestId('tools')).toContainText('radon')
 
     // FR-08: filtering by characteristic only shows that characteristic.
-    await page.getByTestId('filter-characteristic').selectOption('security')
+    await page.getByTestId('tab-security').click()
     const rows = page.locator('[data-testid="findings"] .finding-row')
     await expect(rows.first()).toBeVisible()
     // Wait for the filtered list (the UI debounces filter changes) instead of reading it once.
@@ -52,11 +52,23 @@ test.describe('UC-03 / UC-04 View score and inspect issues', () => {
   })
 })
 
-test('home page has no serious accessibility violations (NFR-13)', async ({ page }) => {
+for (const scheme of ['light', 'dark'] as const) {
+  test(`home page has no serious accessibility violations in ${scheme} mode (NFR-13)`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme: scheme })
+    await page.goto('/')
+    const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze()
+    const serious = results.violations.filter((v) => ['serious', 'critical'].includes(v.impact ?? ''))
+    expect(serious.map((v) => v.id)).toEqual([])
+  })
+}
+
+test('results page has no serious accessibility violations (NFR-13)', async ({ page }) => {
   await page.goto('/')
+  await page.getByRole('link', { name: /View report/ }).first().click()
+  await expect(page.getByTestId('findings')).toBeVisible()
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze()
   const serious = results.violations.filter((v) => ['serious', 'critical'].includes(v.impact ?? ''))
-  expect(serious.map((v) => v.id)).toEqual([])
+  expect(serious.map((v) => `${v.id}: ${v.nodes[0]?.target}`)).toEqual([])
 })
 
 test.describe('FR-14 Stop a running analysis', () => {
@@ -70,6 +82,7 @@ test.describe('FR-14 Stop a running analysis', () => {
     await expect(page.getByTestId('stage')).toBeVisible()
     await expect(page.getByTestId('stage')).toContainText(/Cloning|Running|Reading|Checking|Waiting/)
     await page.getByTestId('stop').click()
+    await page.getByTestId('confirm-stop').click()   // Stop asks for confirmation first
 
     await expect(page.getByTestId('status')).toHaveText('Cancelled', { timeout: 10_000 })
     await expect(page.getByTestId('cancelled')).toBeVisible()
