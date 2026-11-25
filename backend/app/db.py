@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS analyses (
     repo_url TEXT NOT NULL,
     client TEXT NOT NULL,
     status TEXT NOT NULL,
+    stage TEXT,
     commit_sha TEXT,
     grade TEXT,
     overall REAL,
@@ -40,9 +41,11 @@ CREATE INDEX IF NOT EXISTS idx_findings_analysis ON findings(analysis_id);
 CREATE INDEX IF NOT EXISTS idx_analyses_client_created ON analyses(client, created_at);
 """
 
-_UPDATABLE = ("status", "commit_sha", "grade", "overall", "scores", "tools", "stats", "error", "finished_at")
+_UPDATABLE = ("status", "stage", "commit_sha", "grade", "overall", "scores", "tools", "stats", "error",
+              "finished_at")
 _UPDATE_SQL = (
-    "UPDATE analyses SET status = COALESCE(?, status), commit_sha = COALESCE(?, commit_sha), "
+    "UPDATE analyses SET status = COALESCE(?, status), stage = COALESCE(?, stage), "
+    "commit_sha = COALESCE(?, commit_sha), "
     "grade = COALESCE(?, grade), overall = COALESCE(?, overall), scores = COALESCE(?, scores), "
     "tools = COALESCE(?, tools), stats = COALESCE(?, stats), error = COALESCE(?, error), "
     "finished_at = COALESCE(?, finished_at) WHERE id = ?"
@@ -62,6 +65,9 @@ class Database:
         self._lock = threading.Lock()
         with self._connect() as conn:
             conn.executescript(_SCHEMA)
+            columns = {row["name"] for row in conn.execute("PRAGMA table_info(analyses)")}
+            if "stage" not in columns:  # databases created by v0.1
+                conn.execute("ALTER TABLE analyses ADD COLUMN stage TEXT")
 
     @contextmanager
     def _connect(self):
@@ -115,6 +121,14 @@ class Database:
     def delete_analysis(self, analysis_id: str) -> bool:
         with self._connect() as conn:
             cursor = conn.execute("DELETE FROM analyses WHERE id = ?", (analysis_id,))
+        return cursor.rowcount > 0
+
+    def mark_cancelled(self, analysis_id: str) -> bool:
+        """FR-14: stop a queued or running analysis. False if it has already finished."""
+        with self._connect() as conn:
+            cursor = conn.execute(
+                "UPDATE analyses SET status = 'cancelled', error = 'Cancelled by the user.', finished_at = ? "
+                "WHERE id = ? AND status IN ('queued', 'running')", (now_iso(), analysis_id))
         return cursor.rowcount > 0
 
     def count_active(self) -> int:

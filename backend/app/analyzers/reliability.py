@@ -65,6 +65,7 @@ class ReliabilityAnalyzer:
     def run(self, repo: RepoSnapshot) -> AdapterResult:
         result = AdapterResult(tool=self.name, version=self.version, ok=True)
         for path in repo.source_files:
+            repo.checkpoint()
             if path in repo.test_files:
                 continue
             self._scan_file(repo, path, result)

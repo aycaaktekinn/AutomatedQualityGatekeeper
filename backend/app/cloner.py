@@ -21,6 +21,7 @@ from pathlib import Path
 
 from . import config
 from .analyzers.base import RepoSnapshot
+from .control import Checkpoint, no_checkpoint, run_process
 from .repo_url import RepoRef
 
 # Review fix (S607): call git by absolute path so PATH cannot be hijacked.
@@ -58,7 +59,7 @@ def check_repository_metadata(ref: RepoRef, timeout: float = 10.0) -> dict:
     return data
 
 
-def clone_repository(ref: RepoRef, destination: Path) -> str:
+def clone_repository(ref: RepoRef, destination: Path, checkpoint: Checkpoint = no_checkpoint) -> str:
     """Shallow-clone the default branch into ``destination`` and return the commit SHA."""
     env = {
         "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
@@ -81,15 +82,13 @@ def clone_repository(ref: RepoRef, destination: Path) -> str:
         "--", ref.clone_url, str(destination),
     ]
     try:
-        subprocess.run(command, env=env, check=True, capture_output=True,  # nosec B603
-                       timeout=config.CLONE_TIMEOUT_S)
+        cloned = run_process(command, env=env, timeout=config.CLONE_TIMEOUT_S, checkpoint=checkpoint)
     except subprocess.TimeoutExpired as exc:
         raise FetchError("Cloning took too long.") from exc
-    except subprocess.CalledProcessError as exc:
-        raise FetchError("Repository could not be cloned. Check that it exists and is public.") from exc
+    if cloned.returncode != 0:
+        raise FetchError("Repository could not be cloned. Check that it exists and is public.")
 
-    sha = subprocess.run([GIT, "-C", str(destination), "rev-parse", "HEAD"],  # nosec B603
-                         env=env, capture_output=True, text=True, timeout=30)
+    sha = run_process([GIT, "-C", str(destination), "rev-parse", "HEAD"], env=env, timeout=30)
     shutil.rmtree(destination / ".git", ignore_errors=True)
     return sha.stdout.strip()
 
@@ -122,11 +121,12 @@ class _Budget:
             raise FetchError(f"Repository is larger than {config.MAX_REPO_SIZE_MB} MB.")
 
 
-def build_snapshot(root: Path) -> RepoSnapshot:
+def build_snapshot(root: Path, checkpoint: Checkpoint = no_checkpoint) -> RepoSnapshot:
     """Walk the clone and collect the files analysers may read, enforcing limits."""
-    snapshot = RepoSnapshot(root=root)
+    snapshot = RepoSnapshot(root=root, checkpoint=checkpoint)
     budget = _Budget()
     for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
+        checkpoint()
         dirnames[:] = [d for d in dirnames if d not in config.EXCLUDED_DIRS]
         for filename in filenames:
             _visit_file(snapshot, budget, Path(dirpath) / filename)

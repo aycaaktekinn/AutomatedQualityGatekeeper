@@ -72,10 +72,16 @@ button { font: inherit; cursor: pointer; }
   border: 1px solid var(--border); }
 .pill-completed { color: var(--g-a); } .pill-partial { color: var(--warn); } .pill-failed { color: var(--error); }
 .pill-running, .pill-queued { color: var(--accent); }
+.pill-cancelled { color: var(--muted); }
 
 .summary-main { display: flex; gap: 20px; align-items: center; }
 .repo-title { margin: 0 0 4px; font-size: 24px; word-break: break-all; }
-.progress { height: 4px; margin-top: 16px; border-radius: 4px; background: var(--border); overflow: hidden; position: relative; }
+.progress-block { margin-top: 16px; }
+.progress-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 10px; flex-wrap: wrap; font-size: 14px; }
+.btn-secondary { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-weight: 600; }
+.btn-secondary:hover { border-color: var(--error); color: var(--error); }
+.btn-secondary:disabled { opacity: 0.6; cursor: wait; }
+.progress { height: 4px; margin-top: 0; border-radius: 4px; background: var(--border); overflow: hidden; position: relative; }
 .progress::after { content: ""; position: absolute; inset: 0; width: 30%; background: var(--accent);
   animation: slide 1.2s ease-in-out infinite; }
 @keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(340%); } }

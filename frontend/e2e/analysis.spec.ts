@@ -58,3 +58,21 @@ test('home page has no serious accessibility violations (NFR-13)', async ({ page
   const serious = results.violations.filter((v) => ['serious', 'critical'].includes(v.impact ?? ''))
   expect(serious.map((v) => v.id)).toEqual([])
 })
+
+test.describe('FR-14 Stop a running analysis', () => {
+  const LARGE_REPO = process.env.E2E_LARGE_REPO ?? 'https://github.com/python/mypy'
+
+  test('shows progress and stops when the user presses Stop', async ({ page }) => {
+    await page.goto('/')
+    await page.getByTestId('repo-url').fill(LARGE_REPO)
+    await page.getByTestId('analyse').click()
+
+    await expect(page.getByTestId('stage')).toBeVisible()
+    await expect(page.getByTestId('stage')).toContainText(/Cloning|Running|Reading|Checking|Waiting/)
+    await page.getByTestId('stop').click()
+
+    await expect(page.getByTestId('status')).toHaveText('Cancelled', { timeout: 10_000 })
+    await expect(page.getByTestId('cancelled')).toBeVisible()
+    await expect(page.getByTestId('stop')).toHaveCount(0)
+  })
+})

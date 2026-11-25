@@ -42,6 +42,7 @@ class RadonAnalyzer:
         mi_values: list[float] = []
         failed_files = 0
         for path in repo.python_files:
+            repo.checkpoint()
             code = path.read_text(encoding="utf-8", errors="ignore")
             try:
                 blocks = cc_visit(code)
@@ -80,6 +81,7 @@ class LizardAnalyzer:
         result = AdapterResult(tool=self.name, version=version("lizard"), ok=True)
         functions = cc_sum = high = 0
         for path in repo.js_files:
+            repo.checkpoint()
             info = lizard.analyze_file(str(path))
             for func in info.function_list:
                 functions += 1

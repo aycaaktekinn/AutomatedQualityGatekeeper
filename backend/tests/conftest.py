@@ -26,7 +26,7 @@ def copy_fetcher():
     """Replaces the GitHub fetcher: copies a local fixture instead of cloning."""
 
     def make(source: Path):
-        def fetch(_ref, destination: Path) -> str:
+        def fetch(_ref, destination: Path, _checkpoint=None) -> str:
             shutil.copytree(source, destination)
             return "0123456789abcdef"
 

@@ -6,7 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-Status = Literal["queued", "running", "completed", "partial", "failed"]
+Status = Literal["queued", "running", "completed", "partial", "failed", "cancelled"]
 
 
 class AnalysisRequest(BaseModel):
@@ -35,6 +35,7 @@ class Analysis(BaseModel):
     id: str
     repo_url: str
     status: Status
+    stage: str | None = None
     commit_sha: str | None = None
     grade: str | None = None
     overall: float | None = None

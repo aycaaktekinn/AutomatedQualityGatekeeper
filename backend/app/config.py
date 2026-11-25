@@ -5,6 +5,7 @@ so the code and the requirement can be traced to each other.
 """
 
 import os
+import tempfile
 from pathlib import Path
 
 # FR-03: repositories larger than this are rejected.
@@ -17,6 +18,8 @@ MAX_FILES = 50_000
 # SR-01 / R2: hard time limits for external processes (seconds).
 CLONE_TIMEOUT_S = 120
 ANALYSER_TIMEOUT_S = 300
+# Hard limit for one whole analysis, queue time excluded (FR-14 / SR-01).
+ANALYSIS_TIMEOUT_S = int(os.getenv("QG_ANALYSIS_TIMEOUT_S", "600"))
 
 # SR-05: rate limit and queue cap.
 MAX_ANALYSES_PER_HOUR = int(os.getenv("QG_MAX_ANALYSES_PER_HOUR", "5"))
@@ -34,5 +37,7 @@ JS_EXTENSIONS = frozenset({".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"})
 
 DATA_DIR = Path(os.getenv("QG_DATA_DIR", Path(__file__).resolve().parent.parent / "data"))
 DB_PATH = DATA_DIR / "gatekeeper.sqlite3"
-WORK_DIR = Path(os.getenv("QG_WORK_DIR", DATA_DIR / "work"))
+# Clones go to the system temp folder, never inside the source tree: a file watcher
+# (uvicorn --reload) would otherwise restart the server in the middle of an analysis.
+WORK_DIR = Path(os.getenv("QG_WORK_DIR", Path(tempfile.gettempdir()) / "quality-gatekeeper"))
 STATIC_DIR = Path(os.getenv("QG_STATIC_DIR", Path(__file__).resolve().parent.parent / "static"))

@@ -38,8 +38,16 @@ After the fix: psf/requests B (89.2), pallets/flask B (85.9), pallets/itsdangero
 | 12 | GitHub Actions (G2) | Tests passed locally with `python -m pytest` but failed in CI with plain `pytest`: `ModuleNotFoundError: app` | `pythonpath = ["."]` in the pytest configuration, so both commands behave the same | Portability (NFR-07) |
 | 13 | GitHub Actions warning | Actions pinned to versions that run on deprecated Node.js 20 | Updated to `checkout@v5`, `setup-python@v6`, `setup-node@v5` | Maintainability |
 
+## Round 5 — first user test (an analysis never finished)
+
+| # | Found by | Finding | Change | Requirement |
+| --- | --- | --- | --- | --- |
+| 14 | User test | Clones were written to `backend/data/work`; with `uvicorn --reload` every cloned `.py` file could restart the server in the middle of a run | Clones go to the system temp folder; README uses `--reload-dir app`; regression test | NFR-15 |
+| 15 | User test | No way to stop a long analysis, and Radon/Lizard had no time limit | FR-14 implemented: Stop button, `POST /api/analyses/{id}/cancel`, processes polled and killed within a second, 10-minute limit for the whole run | FR-14, SR-01, R3 |
+| 16 | User test | The UI only showed "Analysing…", so a long run looked frozen | Current stage (cloning, running radon, …) and elapsed time shown | NFR-06, NFR-14 |
+
 ## Gate status after all rounds
 
 - Ruff: 0 issues · xenon: every function McCabe ≤ 10, average 2.6 · Bandit: 0 medium/high
-- 70 backend tests, branch coverage 89% · 4 Playwright E2E tests incl. accessibility
+- 81 backend tests, branch coverage 89% · 5 Playwright E2E tests incl. accessibility
 - Dogfooding: our own repository scores **A (97.5)**

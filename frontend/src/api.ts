@@ -1,6 +1,6 @@
 // Typed client for the REST API contract (OpenAPI at /docs).
 
-export type Status = 'queued' | 'running' | 'completed' | 'partial' | 'failed'
+export type Status = 'queued' | 'running' | 'completed' | 'partial' | 'failed' | 'cancelled'
 export type CharacteristicName = 'maintainability' | 'security' | 'reliability'
 export type SeverityName = 'low' | 'medium' | 'high'
 
@@ -21,6 +21,7 @@ export interface Analysis {
   id: string
   repo_url: string
   status: Status
+  stage: string | null
   commit_sha: string | null
   grade: string | null
   overall: number | null
@@ -43,7 +44,7 @@ export interface Finding {
   snippet: string
 }
 
-export const FINAL_STATUSES: Status[] = ['completed', 'partial', 'failed']
+export const FINAL_STATUSES: Status[] = ['completed', 'partial', 'failed', 'cancelled']
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
@@ -77,6 +78,8 @@ export const api = {
     Object.entries(filters).forEach(([key, value]) => value && params.set(key, value))
     return request<Finding[]>(`/api/analyses/${encodeURIComponent(id)}/findings?${params}`)
   },
+  cancelAnalysis: (id: string) =>
+    request<Analysis>(`/api/analyses/${encodeURIComponent(id)}/cancel`, { method: 'POST' }),
   deleteAnalysis: (id: string) =>
     request<void>(`/api/analyses/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 }

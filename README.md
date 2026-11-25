@@ -20,7 +20,10 @@ docker compose up --build
 # backend
 cd backend
 pip install -r requirements-dev.txt
-uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --reload --reload-dir app --port 8000
+
+# Note: keep --reload-dir app. Clones go to the system temp folder, but watching the whole
+# backend folder would still restart the server on unrelated file changes.
 
 # frontend (second terminal, hot reload on http://localhost:5173)
 cd frontend

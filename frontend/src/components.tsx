@@ -16,6 +16,7 @@ const STATUS_LABEL: Record<Status, string> = {
   completed: 'Completed',
   partial: 'Partial result',
   failed: 'Failed',
+  cancelled: 'Cancelled',
 }
 
 export function StatusPill({ status }: { status: Status }) {

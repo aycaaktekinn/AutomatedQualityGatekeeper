@@ -12,6 +12,8 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Protocol
 
+from ..control import Checkpoint, no_checkpoint
+
 
 class Characteristic(StrEnum):
     """ISO/IEC 25010 characteristics that the tool scores."""
@@ -55,6 +57,8 @@ class RepoSnapshot:
     test_files: list[Path] = field(default_factory=list)
     loc: int = 0
     skipped_files: int = 0
+    # Called between files so a run can be cancelled or timed out (FR-14).
+    checkpoint: Checkpoint = field(default=no_checkpoint, repr=False, compare=False)
 
     @property
     def kloc(self) -> float:

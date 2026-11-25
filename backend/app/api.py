@@ -8,6 +8,7 @@ from typing import Literal
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Request
 
 from . import __version__, config
+from .control import request_cancel
 from .db import Database
 from .pipeline import run_analysis
 from .repo_url import InvalidRepoUrl, parse_repo_url
@@ -86,6 +87,18 @@ def findings(analysis_id: str, request: Request,
     database = _db(request)
     _get_or_404(database, analysis_id)
     return database.list_findings(analysis_id, characteristic, severity, file)
+
+
+@router.post("/analyses/{analysis_id}/cancel", response_model=Analysis,
+             responses={404: {"model": ErrorOut}, 409: {"model": ErrorOut}})
+def cancel_analysis(analysis_id: str, request: Request) -> dict:
+    """FR-14: stop a queued or running analysis; its process is killed within a second."""
+    database = _db(request)
+    _get_or_404(database, analysis_id)
+    if not database.mark_cancelled(analysis_id):
+        raise HTTPException(status_code=409, detail="This analysis has already finished.")
+    request_cancel(analysis_id)
+    return _get_or_404(database, analysis_id)
 
 
 @router.delete("/analyses/{analysis_id}", status_code=204)

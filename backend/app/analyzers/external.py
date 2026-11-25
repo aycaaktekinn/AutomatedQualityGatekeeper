@@ -8,20 +8,23 @@ cannot change what the tool does.
 from __future__ import annotations
 
 import json
-import subprocess  # nosec B404 - fixed argument lists only
+import subprocess  # nosec B404
 from importlib.metadata import version
 from pathlib import Path
 
 from .. import config
+from ..control import Checkpoint, no_checkpoint, run_process
 from .base import AdapterResult, Characteristic, Finding, RepoSnapshot, Severity
 from .snippets import read_snippet
 
 _BANDIT_SEVERITY = {"LOW": Severity.LOW, "MEDIUM": Severity.MEDIUM, "HIGH": Severity.HIGH}
 
 
-def _run_json(command: list[str]) -> object:
-    completed = subprocess.run(command, capture_output=True, text=True,  # nosec B603
-                               timeout=config.ANALYSER_TIMEOUT_S, check=False)
+def _run_json(command: list[str], checkpoint: Checkpoint = no_checkpoint) -> object:
+    try:
+        completed = run_process(command, timeout=config.ANALYSER_TIMEOUT_S, checkpoint=checkpoint)
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(f"timed out after {config.ANALYSER_TIMEOUT_S} s") from exc
     if not completed.stdout.strip():
         raise RuntimeError(completed.stderr.strip()[:300] or "no output")
     return json.loads(completed.stdout)
@@ -41,7 +44,7 @@ class RuffAnalyzer:
             "ruff", "check", "--isolated", "--no-cache", "--exit-zero",
             "--output-format", "json", "--select", self.RULES, "--ignore", "E501",
             "--", str(repo.root),
-        ])
+        ], repo.checkpoint)
         result = AdapterResult(tool=self.name, version=version("ruff"), ok=True)
         for item in output:  # type: ignore[union-attr]
             abs_path = Path(item["filename"])
@@ -78,7 +81,7 @@ class BanditAnalyzer:
         output = _run_json([
             "bandit", "-r", str(repo.root), "-f", "json", "-q", "--exit-zero",
             "-s", "B101", "-x", ",".join(f"*/{d}/*" for d in sorted(config.EXCLUDED_DIRS)),
-        ])
+        ], repo.checkpoint)
         result = AdapterResult(tool=self.name, version=version("bandit"), ok=True)
         counts = {severity: 0 for severity in Severity}
         test_files = {p.resolve() for p in repo.test_files}

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api, FINAL_STATUSES, type Analysis, type CharacteristicName } from '../api'
 import { GradeBadge, StatusPill } from '../components'
-import { formatDate, repoName } from '../format'
+import { formatDate, formatElapsed, repoName } from '../format'
 import { FindingsTable } from './FindingsTable'
 
 const POLL_MS = 3000 // FR-06: status refreshes at least every 5 seconds
@@ -32,6 +32,7 @@ function formatDetail(key: string, value: number): string {
 
 function useAnalysis(id: string) {
   const [analysis, setAnalysis] = useState<Analysis | null>(null)
+  const [reload, setReload] = useState(0)
   const [error, setError] = useState<string | null>(null)
   useEffect(() => {
     let timer: number | undefined
@@ -51,21 +52,21 @@ function useAnalysis(id: string) {
       cancelled = true
       window.clearTimeout(timer)
     }
-  }, [id])
-  return { analysis, error }
+  }, [id, reload])
+  return { analysis, error, refresh: () => setReload((n) => n + 1) }
 }
 
 // Review fix (dogfooding): the page was one component with McCabe 16; it is now split into parts.
 export function AnalysisPage({ id }: { id: string }) {
-  const { analysis, error } = useAnalysis(id)
+  const { analysis, error, refresh } = useAnalysis(id)
   if (error) return <p className="error" role="alert">{error}</p>
   if (!analysis) return <p className="muted">Loading…</p>
   const done = FINAL_STATUSES.includes(analysis.status)
   return (
     <>
-      <Summary analysis={analysis} done={done} />
+      <Summary analysis={analysis} done={done} onChange={refresh} />
       {analysis.scores && <ScoreCards analysis={analysis} />}
-      {done && analysis.status !== 'failed' && <FindingsTable analysisId={analysis.id} />}
+      {done && analysis.status !== 'failed' && analysis.status !== 'cancelled' && <FindingsTable analysisId={analysis.id} />}
       {done && (
         <section className="two-col">
           <ToolsCard analysis={analysis} />
@@ -76,7 +77,55 @@ export function AnalysisPage({ id }: { id: string }) {
   )
 }
 
-function Summary({ analysis, done }: { analysis: Analysis; done: boolean }) {
+function useNow(active: boolean): number {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    if (!active) return
+    const timer = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => window.clearInterval(timer)
+  }, [active])
+  return now
+}
+
+// FR-14: a running analysis shows what it is doing, how long it has taken, and can be stopped.
+function Progress({ analysis, onChange }: { analysis: Analysis; onChange: () => void }) {
+  const now = useNow(true)
+  const [stopping, setStopping] = useState(false)
+  const [stopError, setStopError] = useState<string | null>(null)
+
+  async function onStop() {
+    setStopping(true)
+    setStopError(null)
+    try {
+      await api.cancelAnalysis(analysis.id)
+    } catch (err) {
+      setStopError(err instanceof Error ? err.message : 'Could not stop the analysis.')
+    } finally {
+      setStopping(false)
+      onChange()
+    }
+  }
+
+  return (
+    <div className="progress-block">
+      <div className="progress" role="progressbar" aria-label="Analysis in progress" />
+      <div className="progress-row">
+        <span data-testid="stage">
+          {analysis.status === 'queued' ? 'Waiting for a free slot' : analysis.stage ?? 'Starting'}
+          {' · '}
+          {formatElapsed(analysis.created_at, now)}
+        </span>
+        <button className="btn-secondary" onClick={onStop} disabled={stopping} data-testid="stop">
+          {stopping ? 'Stopping…' : 'Stop analysis'}
+        </button>
+      </div>
+      {stopError && <p className="error" role="alert">{stopError}</p>}
+      <p className="hint">Analyses stop automatically after 10 minutes.</p>
+    </div>
+  )
+}
+
+function Summary({ analysis, done, onChange }: { analysis: Analysis; done: boolean; onChange: () => void }) {
   return (
     <section className="card summary" aria-live="polite">
       <div className="summary-main">
@@ -93,7 +142,8 @@ function Summary({ analysis, done }: { analysis: Analysis; done: boolean }) {
           </p>
         </div>
       </div>
-      {!done && <div className="progress" role="progressbar" aria-label="Analysis in progress" />}
+      {!done && <Progress analysis={analysis} onChange={onChange} />}
+      {analysis.status === 'cancelled' && <p className="muted" data-testid="cancelled">This analysis was stopped.</p>}
       {analysis.status === 'failed' && <p className="error" role="alert" data-testid="failure">{analysis.error}</p>}
       {analysis.status === 'partial' && (
         <p className="warning">Some analysers failed, so this result is partial. See the tool list below.</p>
