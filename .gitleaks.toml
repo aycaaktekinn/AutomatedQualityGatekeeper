@@ -1,0 +1,6 @@
+# The planted-issues fixture contains a fake token on purpose (it tests secret masking).
+[extend]
+useDefault = true
+
+[allowlist]
+paths = ['''backend/tests/fixtures/''', '''backend/tests/test_rules.py''']

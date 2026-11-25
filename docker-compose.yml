@@ -1,0 +1,24 @@
+# NFR-07: the whole system starts with `docker compose up --build`, then open http://localhost:8000
+services:
+  gatekeeper:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - gatekeeper-data:/data
+    tmpfs:
+      - /work:size=1g          # clones live in memory and vanish with the container (SR-06)
+      - /tmp:size=256m
+    read_only: true            # SR-01: read-only root filesystem
+    cap_drop: [ALL]            # SR-01: no Linux capabilities
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2g
+    restart: unless-stopped
+
+volumes:
+  gatekeeper-data:

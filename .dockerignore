@@ -1,0 +1,7 @@
+**/node_modules
+**/__pycache__
+backend/data
+backend/static
+frontend/test-results
+frontend/playwright-report
+.git

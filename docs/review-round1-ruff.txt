@@ -1,0 +1,7 @@
+app/cloner.py:39:14: S310 Audit URL open for permitted schemes. Allowing use of `file:` or custom schemes is often unexpected.
+app/cloner.py:83:26: S607 Starting a process with a partial executable path
+app/db.py:87:26: S608 Possible SQL injection vector through string-based query construction
+app/main.py:23:5: C901 `create_app` is too complex (14 > 10)
+Found 4 errors.
+app/cloner.py
+    F 101:0 build_snapshot - C (11)

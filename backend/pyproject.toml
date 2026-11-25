@@ -1,0 +1,34 @@
+[project]
+name = "quality-gatekeeper"
+version = "0.1.0"
+description = "Automated Quality Gatekeeper: ISO/IEC 25010 based code quality scores for GitHub repositories"
+requires-python = ">=3.12"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["tests/fixtures"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "I", "UP", "S", "C90", "SIM"]
+ignore = ["S603", "S404"]  # subprocess use is reviewed: fixed argument lists, no shell
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10  # NFR-05
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "S108"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+norecursedirs = ["fixtures"]
+
+[tool.coverage.run]
+source = ["app"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 70
+show_missing = true
+skip_covered = true
