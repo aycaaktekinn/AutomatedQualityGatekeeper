@@ -67,7 +67,9 @@ def clone_repository(ref: RepoRef, destination: Path) -> str:
         "GIT_LFS_SKIP_SMUDGE": "1",
         "GIT_CONFIG_NOSYSTEM": "1",
     }
-    for proxy_var in ("HTTPS_PROXY", "https_proxy", "SSL_CERT_FILE", "GIT_SSL_CAINFO"):
+    # Proxy and certificate settings, plus the variables Windows needs to start processes.
+    for proxy_var in ("HTTPS_PROXY", "https_proxy", "SSL_CERT_FILE", "GIT_SSL_CAINFO",
+                      "SYSTEMROOT", "SystemRoot", "WINDIR", "TEMP", "TMP", "USERPROFILE", "APPDATA"):
         if proxy_var in os.environ:
             env[proxy_var] = os.environ[proxy_var]
     command = [
